@@ -15,7 +15,7 @@ jobs:
     steps:
       # Клонируем код
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Устанавливаем Python
       - name: Set up Python
@@ -34,7 +34,7 @@ jobs:
     steps:
       # Клонируем код
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Устанавливаем Python
       - name: Set up Python
@@ -51,11 +51,17 @@ jobs:
       - name: Run tests
         run: pytest -q
 
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: pytest-report.txt
+
   lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -69,7 +75,7 @@ jobs:
         run: pylint app.py | tee pylint-report.txt
 
       - name: Upload pylint report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pylint-report
           path: pylint-report.txt
@@ -78,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -92,7 +98,18 @@ jobs:
         run: pip-audit > security-report.txt
 
       - name: Upload security report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-report
           path: security-report.txt
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [ build, test, lint, security ]
+    if: failure()
+    steps:
+      - name: Send Slack Notification
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\": \"❌ Pipeline failed in repository $GITHUB_REPOSITORY\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
