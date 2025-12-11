@@ -103,13 +103,23 @@ jobs:
           name: security-report
           path: security-report.txt
 
-  notify:
-    runs-on: ubuntu-latest
+  notify-email:
     needs: [ build, test, lint, security ]
+    runs-on: ubuntu-latest
     if: failure()
     steps:
-      - name: Send Slack Notification
-        run: |
-          curl -X POST -H 'Content-type: application/json' \
-          --data "{\"text\": \"❌ Pipeline failed in repository $GITHUB_REPOSITORY\"}" \
-          ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "❌ GitHub Actions Pipeline Failed"
+          to: ${{ secrets.MAIL_TO }}
+          from: "GitHub Actions <${{ secrets.MAIL_USERNAME }}>"
+          body: |
+            Workflow failed in repository: ${{ github.repository }}
+            Branch: ${{ github.ref }}
+            Job: ${{ github.job }}
+            See details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
