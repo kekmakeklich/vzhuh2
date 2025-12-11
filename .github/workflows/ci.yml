@@ -1,5 +1,9 @@
 name: CI Pipeline
 
+env:
+  PYTHON_VERSION: "3.11"
+  PYLINT_OPTIONS: "--disable=C0114"
+
 on:
   push:
   pull_request:
@@ -46,3 +50,49 @@ jobs:
       # Запуск тестов
       - name: Run tests
         run: pytest -q
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install pylint
+        run: pip install pylint
+
+      - name: Run pylint
+        run: pylint app.py | tee pylint-report.txt
+
+      - name: Upload pylint report
+        uses: actions/upload-artifact@v3
+        with:
+          name: pylint-report
+          path: pylint-report.txt
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Scan dependencies
+        run: pip-audit > security-report.txt
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report
+          path: security-report.txt
